@@ -5,9 +5,6 @@ services:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
       - "--entryPoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
-      - "--certificatesresolvers.myresolver.acme.email=elliott@zenful.site"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
@@ -21,17 +18,15 @@ services:
         published: 443
         target: 443
     volumes:
-      - letsencrypt:/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
 
   web:
-    image: ghcr.io/dreamsofcode-io/zenstats:${GIT_COMMIT_HASH:-latest}
+    image: ghcr.io/pramann/zenstats:${GIT_COMMIT_HASH:-latest}
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.web.loadbalancer.server.port=8080"
-      - "traefik.http.routers.web.rule=Host(`zenful.site`)"
+      - "traefik.http.routers.web.rule=Host(`web.daniel`)"
       - "traefik.http.routers.web.entrypoints=websecure"
-      - "traefik.http.routers.web.tls.certresolver=myresolver"
     secrets:
       - db-password
     environment:
@@ -58,15 +53,19 @@ services:
       - POSTGRES_DB=app
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
     healthcheck:
-      test: [ "CMD", "pg_isready" ]
+      test: ["CMD", "pg_isready"]
       interval: 10s
       timeout: 5s
       retries: 5
 
 volumes:
   db-data:
-  letsencrypt:
+
+networks:
+  default:
+    name: test123
 
 secrets:
   db-password:
-    external: true
+    file: ./secret
+    # external: true
